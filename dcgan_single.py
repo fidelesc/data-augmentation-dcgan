@@ -188,8 +188,8 @@ def train(g_model, d_model, gan_model, dataset, latent_dim, n_epochs, n_batch, n
             
         if (i) % SAVE_EVERY_X_EPOCH == 0:
             print(f"Saved weights for iteration {i}")
-            g_model.save("{out_path}/generator_" + str(i) + ".h5")
-            d_model.save("{out_path}/discriminator_" + str(i) + ".h5")
+            g_model.save(out_path+"/generator_" + str(i) + ".h5")
+            d_model.save(out_path+"/discriminator_" + str(i) + ".h5")
             
 if __name__ == "__main__":
     
@@ -219,9 +219,10 @@ if __name__ == "__main__":
     ImgLocation= args.dataset
     
     OUT_PATH = args.output
+    print(OUT_PATH)
     # Create the destination folder if it doesn't already exist
     if not os.path.exists(OUT_PATH):
-        print(f"Creating local directory {OUT_PATH}")
+        print("Creating local directory: ", OUT_PATH)
         os.makedirs(OUT_PATH)
     
     # Create a list to store image paths
