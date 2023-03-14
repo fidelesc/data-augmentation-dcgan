@@ -39,7 +39,7 @@ The following optional arguments can also be used:
 
 Example usage:
 
-"""python dcgan_single.py -dataset data/training_images/ -epochs 5000 -batch 64 -img-dim 128 -output output/ -eval 200 -save 1000 -lat-dim 64 -img-channels 3"""
+*python dcgan_single.py -dataset data/training_images/ -epochs 5000 -batch 64 -img-dim 128 -output output/ -eval 200 -save 1000 -lat-dim 64 -img-channels 3*
 
 
 ## Generating Images
@@ -53,4 +53,4 @@ To generate synthetic images using the trained model, run the `generator.py` scr
 
 For example, to generate 50 images of the "dead" category using a trained generator model saved in the `output` directory, run:
 
-"""python generator.py -generator output/generator_20000.h5 -category dead -count 50 -output output/generated_images"""
+*python generator.py -generator output/generator_20000.h5 -category dead -count 50 -output output/generated_images*
