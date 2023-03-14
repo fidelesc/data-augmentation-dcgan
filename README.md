@@ -1,4 +1,4 @@
-# Deep Convolutional Generative Adversarial Networks (DCGAN)
+# Image classificator data augmentation with Deep Convolutional Generative Adversarial Networks (DCGAN)
 
 This repository contains the code for training and generating images using Deep Convolutional Generative Adversarial Networks (DCGAN). DCGAN is a popular generative model that uses deep convolutional neural networks (CNNs) to generate high-quality images.
 
