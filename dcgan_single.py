@@ -99,7 +99,7 @@ def def_gan(generator, discriminator):
 
 
 
-def real_samples(generator):
+def real_samples(n, generator):
     # Samples of real data
     X = generator.next()
 
@@ -131,10 +131,10 @@ def fake_samples(generator, latent_dim, n):
     y = np.zeros((n, 1))
     return X, y    
     
-def performance_summary(generator, discriminator, dataset, latent_dim, n=200):
+def performance_summary(generator, discriminator, dataset, latent_dim, n):
     
     # Get samples of the real data
-    x_real, y_real = real_samples(dataset)
+    x_real, y_real = real_samples(n, dataset)
     # Evaluate the descriminator on real data
     _, real_accuracy = discriminator.evaluate(x_real, y_real, verbose=0)
     
@@ -160,7 +160,7 @@ def train(g_model, d_model, gan_model, dataset_generator, latent_dim, n_epochs, 
     
     # Discriminator training
         # Prep real samples
-        x_real, y_real = real_samples(dataset_generator)
+        x_real, y_real = real_samples(half_batch, dataset_generator)
         # Prep fake (generated) samples
         x_fake, y_fake = fake_samples(g_model, latent_dim, half_batch)
         
@@ -185,7 +185,7 @@ def train(g_model, d_model, gan_model, dataset_generator, latent_dim, n_epochs, 
             print("*** Training ***")
             print("Discriminator Loss ", discriminator_loss)
             print("Generator Loss: ", generator_loss)
-            performance_summary(g_model, d_model, dataset_generator, latent_dim)
+            performance_summary(g_model, d_model, dataset_generator, latent_dim, n=half_batch)
             
         if (i) % SAVE_EVERY_X_EPOCH == 0:
             print(f"Saved weights for iteration {i}")
@@ -246,12 +246,11 @@ if __name__ == "__main__":
     train_data_gen = image_gen.flow_from_directory(
     directory=args.dataset,
     target_size=(IMAGE_DIM,IMAGE_DIM),
-    batch_size=N_BATCH,
+    batch_size=int(N_BATCH / 2),
     class_mode=None,
     color_mode=COLOR_MODE
     )
-            
-    
+
     # # Load images and resize to 64 x 64 (DCGAN is 64x64, I did not use this)
     # data_lowres=[]
     # for img in ImagePaths:
