@@ -1,22 +1,23 @@
 # Tensorflow / Keras
 from tensorflow import keras # for building Neural Networks
 print('Tensorflow/Keras: %s' % keras.__version__) # print version
-from keras.models import Sequential # for assembling a Neural Network model
-from keras.layers import Dense, Reshape, Flatten, Conv2D, Conv2DTranspose, ReLU, LeakyReLU, Dropout # adding layers to the Neural Network model
-from tensorflow.keras.utils import plot_model # for plotting model diagram
+from tensorflow.keras.models import Sequential # for assembling a Neural Network model
+from tensorflow.keras.layers import Dense, Reshape, Flatten, Conv2D, Conv2DTranspose, LeakyReLU, Dropout # adding layers to the Neural Network model
+# from tensorflow.keras.utils import plot_model # for plotting model diagram
 from tensorflow.keras.optimizers import Adam # for model optimization 
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # Data manipulation
 import numpy as np # for data manipulation
 print('numpy: %s' % np.__version__) # print version
-import sklearn
-print('sklearn: %s' % sklearn.__version__) # print version
-from sklearn.preprocessing import MinMaxScaler # for scaling inputs used in the generator and discriminator
+# import sklearn
+# print('sklearn: %s' % sklearn.__version__) # print version
+# from sklearn.preprocessing import MinMaxScaler # for scaling inputs used in the generator and discriminator
 
 
 # Visualization
-import cv2 # for ingesting images
-print('OpenCV: %s' % cv2.__version__) # print version
+# import cv2 # for ingesting images
+# print('OpenCV: %s' % cv2.__version__) # print version
 #import matplotlib 
 #import matplotlib.pyplot as plt # or data visualizationa
 #print('matplotlib: %s' % matplotlib.__version__) # print version
@@ -98,13 +99,13 @@ def def_gan(generator, discriminator):
 
 
 
-def real_samples(n, dataset):
-    
+def real_samples(generator):
     # Samples of real data
-    X = dataset[np.random.choice(dataset.shape[0], n, replace=True), :]
+    X = generator.next()
 
     # Class labels
-    y = np.ones((n, 1))
+    y = np.ones((X.shape[0], 1))
+
     return X, y
     
     
@@ -133,7 +134,7 @@ def fake_samples(generator, latent_dim, n):
 def performance_summary(generator, discriminator, dataset, latent_dim, n=200):
     
     # Get samples of the real data
-    x_real, y_real = real_samples(n, dataset)
+    x_real, y_real = real_samples(dataset)
     # Evaluate the descriminator on real data
     _, real_accuracy = discriminator.evaluate(x_real, y_real, verbose=0)
     
@@ -149,7 +150,7 @@ def performance_summary(generator, discriminator, dataset, latent_dim, n=200):
     
 
     
-def train(g_model, d_model, gan_model, dataset, latent_dim, n_epochs, n_batch, n_eval, out_path):
+def train(g_model, d_model, gan_model, dataset_generator, latent_dim, n_epochs, n_batch, n_eval, out_path):
     
     # Our batch to train the discriminator will consist of half real images and half fake (generated) images
     half_batch = int(n_batch / 2)
@@ -159,7 +160,7 @@ def train(g_model, d_model, gan_model, dataset, latent_dim, n_epochs, n_batch, n
     
     # Discriminator training
         # Prep real samples
-        x_real, y_real = real_samples(half_batch, dataset)
+        x_real, y_real = real_samples(dataset_generator)
         # Prep fake (generated) samples
         x_fake, y_fake = fake_samples(g_model, latent_dim, half_batch)
         
@@ -184,7 +185,7 @@ def train(g_model, d_model, gan_model, dataset, latent_dim, n_epochs, n_batch, n
             print("*** Training ***")
             print("Discriminator Loss ", discriminator_loss)
             print("Generator Loss: ", generator_loss)
-            performance_summary(g_model, d_model, dataset, latent_dim)
+            performance_summary(g_model, d_model, dataset_generator, latent_dim)
             
         if (i) % SAVE_EVERY_X_EPOCH == 0:
             print(f"Saved weights for iteration {i}")
@@ -215,8 +216,10 @@ if __name__ == "__main__":
     IMAGE_SHAPE = (args.dim,args.dim,args.channels)
     IMAGE_DIM = IMAGE_SHAPE[0]
     
-    # Specify the location of images after you have downloaded them
-    ImgLocation= args.dataset
+    print()
+    print("Dataset path: ", args.dataset)
+    print("Batch size: ", N_BATCH)
+    print()
     
     OUT_PATH = args.output
     print(OUT_PATH)
@@ -225,46 +228,64 @@ if __name__ == "__main__":
         print("Creating local directory: ", OUT_PATH)
         os.makedirs(OUT_PATH)
     
-    # Create a list to store image paths
-    ImagePaths=[]
-    for image in list(os.listdir(ImgLocation)):
-        ImagePaths=ImagePaths+[ImgLocation+"/"+image]
+    # # Create a list to store image paths
+    # ImagePaths=[]
+    # for image in list(os.listdir(ImgLocation)):
+    #     ImagePaths=ImagePaths+[ImgLocation+"/"+image]
+        
+    # image_gen = ImageDataGenerator(rotation_range=45, #rotate images up to X degrees
+    #                                brightness_range=[0.3, 1], #brigthness range change
+    #                                horizontal_flip=True,
+    #                                shear_range=0.2,
+    #                                rescale=1./255)
+    
+    image_gen = ImageDataGenerator(rescale=1./255)
+    
+    COLOR_MODE = "rgb" if IMAGE_SHAPE[2] == 3 else "grayscale"
+    
+    train_data_gen = image_gen.flow_from_directory(
+    directory=args.dataset,
+    target_size=(IMAGE_DIM,IMAGE_DIM),
+    batch_size=N_BATCH,
+    class_mode=None,
+    color_mode=COLOR_MODE
+    )
             
     
-    # Load images and resize to 64 x 64 (DCGAN is 64x64, I did not use this)
-    data_lowres=[]
-    for img in ImagePaths:
-        image = cv2.imread(img)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # Not required, but to use matplolib to check is required
-        #image_lowres = cv2.resize(image, (64, 64))
-        data_lowres.append(image)
+    # # Load images and resize to 64 x 64 (DCGAN is 64x64, I did not use this)
+    # data_lowres=[]
+    # for img in ImagePaths:
+    #     image = cv2.imread(img)
+    #     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # Not required, but to use matplolib to check is required
+    #     #image_lowres = cv2.resize(image, (64, 64))
+    #     data_lowres.append(image)
         
-    # Convert image data to numpy array and standardize values (divide by 255 since RGB values ranges from 0 to 255)
-    data_lowres = np.array(data_lowres, dtype="float") / 255.0
+    # # Convert image data to numpy array and standardize values (divide by 255 since RGB values ranges from 0 to 255)
+    # data_lowres = np.array(data_lowres, dtype="float") / 255.0
     
-    # Show data shape
-    print("Shape of data_lowres: ", data_lowres.shape)
+    # # Show data shape
+    # print("Shape of data_lowres: ", data_lowres.shape)
     
-    # Scaler
-    scaler=MinMaxScaler(feature_range=(-1, 1))
+    # # Scaler
+    # scaler=MinMaxScaler(feature_range=(-1, 1))
     
-    # Select images that we want to use for model trainng
-    data=data_lowres.copy()
-    print("Original shape of the data: ", data.shape)
+    # # Select images that we want to use for model trainng
+    # data=data_lowres.copy()
+    # print("Original shape of the data: ", data.shape)
     
-    # Reshape array
-    data=data.reshape(-1, 1)
-    print("Reshaped data: ", data.shape)
+    # # Reshape array
+    # data=data.reshape(-1, 1)
+    # print("Reshaped data: ", data.shape)
     
-    # Fit the scaler
-    scaler.fit(data)
+    # # Fit the scaler
+    # scaler.fit(data)
     
-    # Scale the array
-    data=scaler.transform(data)
+    # # Scale the array
+    # data=scaler.transform(data)
     
-    # Reshape back to the original shape
-    data=data.reshape(data_lowres.shape[0], IMAGE_SHAPE[0], IMAGE_SHAPE[1], IMAGE_SHAPE[2])
-    print("Shape of the scaled array: ", data.shape)
+    # # Reshape back to the original shape
+    # data=data.reshape(data_lowres.shape[0], IMAGE_SHAPE[0], IMAGE_SHAPE[1], IMAGE_SHAPE[2])
+    # print("Shape of the scaled array: ", data.shape)
     
     # Instantiate
     latent_dim=args.lat # Our latent space has 100 dimensions. We can change it to any number
@@ -288,4 +309,4 @@ if __name__ == "__main__":
     # gan_model.summary()
     # plot_model(gan_model, show_shapes=True, show_layer_names=True, dpi=400)
     
-    train(gen_model, dis_model, gan_model, data, latent_dim, N_EPOCH, N_BATCH, N_EVAL, OUT_PATH)
+    train(gen_model, dis_model, gan_model, train_data_gen, latent_dim, N_EPOCH, N_BATCH, N_EVAL, OUT_PATH)
